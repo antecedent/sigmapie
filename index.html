@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 	<title>SigmaPie</title>
     <meta charset="utf-8">
@@ -60,10 +61,14 @@
 
 	<h2>Input</h2>
 
+    <p>Enter words separated by whitespace:</p>
+
 	<textarea></textarea>
 
+    
+
 	<p>
-	<button>Click to infer</button> a stringset from the 
+	<button id="infer">Click to infer</button> a stringset from the 
 	<select>
 		<option value="2-MTSL" selected>2-MTSL</option>
 		<option value="2-TSL">2-TSL</option>
@@ -77,6 +82,12 @@
 		<option value="4-SL">4-SL</option>
 	</select> class.
 	</p>
+
+    <p>
+        You might also want to preprocess the input: click a button
+        <button id="lowercase">to lowercase</button>, or
+        <button id="remove-punctuation">to remove punctuation</button>.
+    </p>
 </section>
 
 <section id="output">
@@ -2307,7 +2318,30 @@ def handle_infer_button(event):
 	button.bind('click', generate_examples)
 	out <= html.P(button)
 
-document.select('#input button')[0].bind('click', handle_infer_button)
+def handle_lowercase_button(event):
+    words_box = document.select('#input textarea')[0]
+    words_box.value = words_box.value.lower()
+
+def is_punctuation(c):
+    if c in '!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~':
+        # string.punctuation
+        return True
+    if 0x2000 <= ord(c) <= 0x206F:
+        # General Punctuation (Unicode)
+        return True
+    if 0x2E00 <= ord(c) <= 0x2E7F:
+        # Supplemental Punctuation (Unicode)
+        return True
+    return False
+
+def handle_punctuation_removal_button(event):
+    words_box = document.select('#input textarea')[0]
+    words_box.value = ''.join((c if not is_punctuation(c) else ' ') for c in words_box.value)
+
+document.select('#infer')[0].bind('click', handle_infer_button)
+document.select('#lowercase')[0].bind('click', handle_lowercase_button)
+document.select('#remove-punctuation')[0].bind('click', handle_punctuation_removal_button)
+
     
 </script>
 
