@@ -2362,7 +2362,7 @@ def handle_infer_button(event):
         f = document.select('#membership-field')[0]
         string = f.value
         if syntax_mode:
-            string = [syntax_mode_table[w] if w in syntax_mode_table else None for w in string.split()]
+            string = ''.join(syntax_mode_table[w] if w in syntax_mode_table else None for w in string.split())
         r = document.select('#membership-result')[0]
         m = 'Yes' if all(c in model.alphabet for c in string) and model.scan(string) else 'No'
         f.class_name = m
