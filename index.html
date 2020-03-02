@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>SigmaPie</title>
+    <title>SigmaPie UI</title>
     <meta charset="utf-8">
     <script type="text/javascript"
         src="https://cdn.jsdelivr.net/npm/brython@3.8.7/brython.min.js">
@@ -45,13 +45,32 @@
             text-align: center;
         }
 
+        #membership-field.Yes {
+            background: #DFE;
+        }
+
+        #membership-field.No {
+            background: #FDE;
+        }
+
+        #membership-result.Yes {
+            color: #397;
+        }
+
+        #membership-result.No {
+            color: #937;
+        }
+
+        button {
+            padding: 4px;
+        }
 
     </style>
 </head>
 
 <body onload="brython()">
 
-    <h1>SigmaPie running on Brython</h1>
+    <h1>A web UI for SigmaPie, running on Brython</h1>
 
     <p><a href="https://github.com/alenaks/SigmaPie">SigmaPie</a> (created and maintained by Alëna Aksënova) is a library of grammatical inference algorithms for working "with subregular grammars both from the perspectives of theoretical linguistics and formal language theory".</p>
 
@@ -2339,9 +2358,23 @@ def handle_infer_button(event):
     out <= example_box
     def generate_examples(event):
         example_box <= html.P(', '.join(''.join(T[c] for c in s).strip() for s in model.generate_sample()))
+    def test_membership(event):
+        f = document.select('#membership-field')[0]
+        string = f.value
+        if syntax_mode:
+            string = [syntax_mode_table[w] if w in syntax_mode_table else None for w in string.split()]
+        r = document.select('#membership-result')[0]
+        m = 'Yes' if all(c in model.alphabet for c in string) and model.scan(string) else 'No'
+        f.class_name = m
+        r.class_name = m
+        r.clear()
+        r <= m
     button = html.BUTTON('Generate examples')
     button.bind('click', generate_examples)
     out <= html.P(button)
+    membership_field = html.INPUT(id='membership-field')
+    membership_field.bind('keyup', test_membership)
+    out <= html.P(['Is the string ', membership_field, ' a member of the stringset? ', html.SPAN(id='membership-result')])
 
 def handle_lowercase_button(event):
     words_box = document.select('#input textarea')[0]
