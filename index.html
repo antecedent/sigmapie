@@ -2,48 +2,48 @@
 <html>
 
 <head>
-	<title>SigmaPie</title>
+    <title>SigmaPie</title>
     <meta charset="utf-8">
     <script type="text/javascript"
         src="https://cdn.jsdelivr.net/npm/brython@3.8.7/brython.min.js">
     </script>
     <style type="text/css">
-    	* {
-    		margin: 0;
-    		padding: 0;
-    	}
+        * {
+            margin: 0;
+            padding: 0;
+        }
 
-    	body {
-    		font-size: 16px;
-    		font-family: 'Segoe UI', sans-serif;
-    	}
+        body {
+            margin: 20px;
+            font-size: 16px;
+            font-family: 'Segoe UI', sans-serif;
+        }
 
-    	#input textarea {
-    		display: block;
-    		height: 200px;
-    		width: calc(100vw - 50px);
-    		margin: 21px;
-    		padding: 2px;
-    	}
+        #input textarea {
+            display: block;
+            height: 200px;
+            width: calc(100vw - 50px);
+            padding: 2px;
+        }
 
-    	table {
-    		margin: 30px auto;
-    		border-collapse: collapse;
-    	}
+        table {
+            margin: 30px auto;
+            border-collapse: collapse;
+        }
 
-    	table, table tr, table th, table td {
-    		border: 1px solid gray;
-    	}
-    	
-    	table td, table th {
-    		padding: 3px 6px;
-    	}
+        table, table tr, table th, table td {
+            border: 1px solid gray;
+        }
+        
+        table td, table th {
+            padding: 3px 6px;
+        }
 
-    	p, h1, h2 {
-    		margin: 30px auto;
-    		max-width: 800px;
-    		text-align: center;
-    	}
+        p, h1, h2 {
+            margin: 30px auto;
+            max-width: 800px;
+            text-align: center;
+        }
 
 
     </style>
@@ -51,42 +51,46 @@
 
 <body onload="brython()">
 
-	<h1>SigmaPie running on Brython</h1>
+    <h1>SigmaPie running on Brython</h1>
 
-	<p><a href="https://github.com/alenaks/SigmaPie">SigmaPie</a> (created and maintained by Alëna Aksënova) is a library of grammatical inference algorithms for working "with subregular grammars both from the perspectives of theoretical linguistics and formal language theory".</p>
+    <p><a href="https://github.com/alenaks/SigmaPie">SigmaPie</a> (created and maintained by Alëna Aksënova) is a library of grammatical inference algorithms for working "with subregular grammars both from the perspectives of theoretical linguistics and formal language theory".</p>
 
-	<p><a href="https://brython.info/">Brython</a> is a Python 3 implementation for web browsers that makes it possible, among many other wonderful things, to run SigmaPie in this exact way: as a purely client-side web application.</p>
+    <p><a href="https://brython.info/">Brython</a> is a Python 3 implementation for web browsers that makes it possible, among many other wonderful things, to run SigmaPie in this exact way: as a purely client-side web application.</p>
 
 <section id="input">
 
-	<h2>Input</h2>
+    <h2>Input</h2>
 
     <p>Enter words separated by whitespace:</p>
 
-	<textarea></textarea>
+    <textarea></textarea>
 
     
 
-	<p>
-	<button id="infer">Click to infer</button> a stringset from the 
-	<select>
-		<option value="2-MTSL" selected>2-MTSL</option>
-		<option value="2-TSL">2-TSL</option>
-		<option value="2-SP">2-SP</option>
-		<option value="2-SL">2-SL</option>
-		<option value="3-TSL">3-TSL</option>
-		<option value="3-SP">3-SP</option>
-		<option value="3-SL">3-SL</option>
-		<option value="4-TSL">4-TSL</option>
-		<option value="4-SP">4-SP</option>
-		<option value="4-SL">4-SL</option>
-	</select> class.
-	</p>
+    <p>
+    <button id="infer">Click to infer</button> a stringset from the 
+    <select>
+        <option value="2-MTSL" selected>2-MTSL</option>
+        <option value="2-TSL">2-TSL</option>
+        <option value="2-SP">2-SP</option>
+        <option value="2-SL">2-SL</option>
+        <option value="3-TSL">3-TSL</option>
+        <option value="3-SP">3-SP</option>
+        <option value="3-SL">3-SL</option>
+        <option value="4-TSL">4-TSL</option>
+        <option value="4-SP">4-SP</option>
+        <option value="4-SL">4-SL</option>
+    </select> class.
+    </p>
 
     <p>
         You might also want to preprocess the input: click a button
         <button id="lowercase">to lowercase</button>, or
         <button id="remove-punctuation">to remove punctuation</button>.
+    </p>
+
+    <p>
+        <input type="checkbox" id="syntax-mode"> Enable syntax mode (words treated as characters, lines as words)
     </p>
 </section>
 
@@ -733,7 +737,7 @@ def randint(a, b):
     return int(window.Math.random()*(b-a+1)+a)
 
 def choice(pool):
-	return pool[randint(0, len(pool) - 1)]
+    return pool[randint(0, len(pool) - 1)]
 
 def product(*args, repeat=1):
     # product('ABCD', 'xy') --> Ax Ay Bx By Cx Cy Dx Dy
@@ -865,9 +869,9 @@ class SP(L):
         found_in_G = [(s in self.grammar) for s in subseq]
         
         if self.check_polarity == "p":
-        	return all(found_in_G)
+            return all(found_in_G)
         else:
-        	return not any(found_in_G)
+            return not any(found_in_G)
 
 
     def generate_item(self):
@@ -941,7 +945,7 @@ class SP(L):
         new_value = self.check_polarity()
 
         if old_value != new_value:
-        	self.grammar = self.opposite_polarity()
+            self.grammar = self.opposite_polarity()
 
 
 
@@ -1454,9 +1458,9 @@ class TSL(SL):
         matches = [(n in self.grammar) for n in self.ngramize_item(tier_img)]
 
         if self.check_polarity() == "p":
-        	return all(matches)
+            return all(matches)
         else:
-        	return not any(matches)
+            return not any(matches)
 
         
 
@@ -1482,8 +1486,8 @@ class MTSL(TSL):
         super().__init__(alphabet, grammar, k, data, edges, polar)
         self.fsm = FSMFamily()
         if self.k != 2:
-        	raise NotImplementedError("The learner for k-MTSL languages is "
-        							  "still being designed.")
+            raise NotImplementedError("The learner for k-MTSL languages is "
+                                      "still being designed.")
         self.tier = None
 
 
@@ -1500,10 +1504,10 @@ class MTSL(TSL):
              (tier_n):[bigrams_for_tier_n]}
         """
         if not self.data:
-    	    raise ValueError("Data needs to be provided.")
+            raise ValueError("Data needs to be provided.")
         if not self.alphabet:
-    	    raise ValueError("The alphabet is empty. Provide data or "
-    	    	"run `grammar.extract_alphabet`.")
+            raise ValueError("The alphabet is empty. Provide data or "
+                "run `grammar.extract_alphabet`.")
 
         possible = set(self.generate_all_ngrams(self.alphabet, self.k))
         attested = set()
@@ -2270,53 +2274,74 @@ def _keep_alive(x, memo):
         memo[id(memo)]=[x]
 
 constructors = {
-	'2-MTSL': lambda: MTSL(k=2, polar='n'),
-	'2-TSL':  lambda: TSL(k=2, polar='n'),
-	'2-SP':   lambda: SP(k=2, polar='n'),
-	'2-SL':   lambda: SL(k=2, polar='n'),
-	'3-TSL':  lambda: TSL(k=3, polar='n'),
-	'3-SP':   lambda: SP(k=3, polar='n'),
-	'3-SL':   lambda: SL(k=3, polar='n'),
-	'4-TSL':  lambda: TSL(k=4, polar='n'),
-	'4-SP':   lambda: SP(k=4, polar='n'),
-	'5-SL':   lambda: SL(k=4, polar='n'),
+    '2-MTSL': lambda: MTSL(k=2, polar='n'),
+    '2-TSL':  lambda: TSL(k=2, polar='n'),
+    '2-SP':   lambda: SP(k=2, polar='n'),
+    '2-SL':   lambda: SL(k=2, polar='n'),
+    '3-TSL':  lambda: TSL(k=3, polar='n'),
+    '3-SP':   lambda: SP(k=3, polar='n'),
+    '3-SL':   lambda: SL(k=3, polar='n'),
+    '4-TSL':  lambda: TSL(k=4, polar='n'),
+    '4-SP':   lambda: SP(k=4, polar='n'),
+    '5-SL':   lambda: SL(k=4, polar='n'),
 }
 
 def handle_infer_button(event):
-	words = document.select('#input textarea')[0].value.split()
-	model_class = document.select('#input select')[0].value
-	model = constructors[model_class]()
-	model.data = words
-	model.extract_alphabet()
-	model.learn()
-	table = html.TABLE()
-	tbody = html.TBODY()
-	if 'TSL' in model_class:
-		tbody <= html.TR([html.TH('Tier'), html.TH('Constraint')])
-		if 'MTSL' in model_class:
-			for tier, constraints in model.grammar.items():
-				tbody <= html.TR([html.TD('{' + ', '.join(sorted(tier)) + '}'), html.TD(', '.join('*' + a + b for a, b in constraints))])
-		else:
-			for constraint in model.grammar:
-				tbody <= html.TR([html.TD('{' + ', '.join(sorted(model.tier)) + '}'), html.TD('*' + ''.join(constraint))])
-	else:
-		tbody <= html.TR([html.TH('Constraint')])
-		for constraint in model.grammar:
-			tbody <= html.TR(html.TD('*' + ''.join(constraint)))
+    words = document.select('#input textarea')[0].value.split()
+    syntax_mode = document.select('#syntax-mode')[0].checked
+    syntax_mode_table = {}
+    next_substitute = 'A'
+    if syntax_mode:
+        words = []
+        for line in document.select('#input textarea')[0].value.split('\n'):
+            sentence_code = ''
+            for word in line.split():
+                if word not in syntax_mode_table:
+                    syntax_mode_table[word] = next_substitute
+                    next_substitute = chr(ord(next_substitute) + 1)
+                    while next_substitute in '<>':
+                        next_substitute = chr(ord(next_substitute) + 1)
+                sentence_code += syntax_mode_table[word]
+            if sentence_code:
+                words.append(sentence_code)
+        T = {v: k + ' ' for (k, v) in syntax_mode_table.items()}
+    else:
+        T = {c: c for c in set(''.join(words))}
+    T['<'] = '⋉'
+    T['>'] = '⋊'
+    model_class = document.select('#input select')[0].value
+    model = constructors[model_class]()
+    model.data = words
+    model.extract_alphabet()
+    model.learn()
+    table = html.TABLE()
+    tbody = html.TBODY()
+    if 'TSL' in model_class:
+        tbody <= html.TR([html.TH('Tier'), html.TH('Constraint')])
+        if 'MTSL' in model_class:
+            for tier, constraints in model.grammar.items():
+                tbody <= html.TR([html.TD('{' + ', '.join(sorted(T[c].strip() for c in tier)) + '}'), html.TD(', '.join('*' + (T[a] + T[b]).strip() for a, b in constraints))])
+        else:
+            for constraint in model.grammar:
+                tbody <= html.TR([html.TD('{' + ', '.join(sorted(T[c].strip() for c in model.tier)) + '}'), html.TD('*' + ''.join(T[c] for c in constraint).strip())])
+    else:
+        tbody <= html.TR([html.TH('Constraint')])
+        for constraint in model.grammar:
+            tbody <= html.TR(html.TD('*' + ''.join(T[c] for c in constraint).strip()))
 
-	table <= tbody
-	out = document.select('#output')[0]
-	out.clear()
-	out <= html.H2(model_class + ' grammar')
+    table <= tbody
+    out = document.select('#output')[0]
+    out.clear()
+    out <= html.H2(model_class + ' grammar')
 
-	out <= table
-	example_box = html.DIV()
-	out <= example_box
-	def generate_examples(event):
-		example_box <= html.P(', '.join(model.generate_sample()))
-	button = html.BUTTON('Generate examples')
-	button.bind('click', generate_examples)
-	out <= html.P(button)
+    out <= table
+    example_box = html.DIV()
+    out <= example_box
+    def generate_examples(event):
+        example_box <= html.P(', '.join(''.join(T[c] for c in s).strip() for s in model.generate_sample()))
+    button = html.BUTTON('Generate examples')
+    button.bind('click', generate_examples)
+    out <= html.P(button)
 
 def handle_lowercase_button(event):
     words_box = document.select('#input textarea')[0]
@@ -2341,7 +2366,6 @@ def handle_punctuation_removal_button(event):
 document.select('#infer')[0].bind('click', handle_infer_button)
 document.select('#lowercase')[0].bind('click', handle_lowercase_button)
 document.select('#remove-punctuation')[0].bind('click', handle_punctuation_removal_button)
-
     
 </script>
 
