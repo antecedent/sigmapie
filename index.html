@@ -116,7 +116,7 @@
 <section id="output">
 </section>
 
-<p>Using SigmaPie snapshot of 5 January 2020.</p>
+<p>Using SigmaPie snapshot of 2 February 2020,<br>with minimal extra patching for a sub-asymptotic performance boost.</p>
 <p>Made available as a web application by Ignas Rudaitis.</p>
 
 <script type="text/python">
@@ -756,7 +756,8 @@ def randint(a, b):
     return int(window.Math.random()*(b-a+1)+a)
 
 def choice(pool):
-    return pool[randint(0, len(pool) - 1)]
+    k = int(window.Math.random() * len(pool))
+    return pool[k]
 
 def product(*args, repeat=1):
     # product('ABCD', 'xy') --> Ax Ay Bx By Cx Cy Dx Dy
@@ -1483,6 +1484,7 @@ class TSL(SL):
 
         
 
+
 class MTSL(TSL):
     """
     A class for tier-based strictly local grammars and languages.
@@ -1508,6 +1510,8 @@ class MTSL(TSL):
             raise NotImplementedError("The learner for k-MTSL languages is "
                                       "still being designed.")
         self.tier = None
+        self.tier_smap = None
+        self.main_smap = None
 
 
     def learn(self):
@@ -1555,7 +1559,7 @@ class MTSL(TSL):
                     if (p[0] == bgr[0]) and (p[-1] == bgr[-1]) and (s in p[1]):
                         relevant_paths.append(p)
                 for rp in relevant_paths:
-                    new = [rp[0], [i for i in rp[1] if i != s], rp[2]]
+                    new = (rp[0], tuple(i for i in rp[1] if i != s), rp[2])
                     if new not in paths:
                         rmv = False
                         break
@@ -1572,6 +1576,9 @@ class MTSL(TSL):
 
         if self.check_polarity() == "p":
             self.grammar = self.opposite_polarity()
+
+        self.tier_smap = None
+        self.main_smap = None
 
 
     def scan(self, string):
@@ -1634,16 +1641,13 @@ class MTSL(TSL):
             list: list of paths of `string`.
         """
         string = self.annotate_string(string)
-        paths = []
+        paths = set()
 
         for i in range(len(string) - 1):
             for j in range(i + 1, len(string)):
-                path = [string[i]]
-                path.append(list(set([k for k in string[(i + 1):j]])))
-                path.append(string[j])
-
+                path = (string[i], tuple(set(k for k in string[(i + 1):j])), string[j])
                 if path not in paths:
-                    paths.append(path)
+                    paths.add(path)
 
         return paths
 
@@ -1656,12 +1660,9 @@ class MTSL(TSL):
         Returns:
             list: a list of paths present in `dataset`.
         """
-        paths = []
+        paths = set()
         for item in dataset:
-            for p in self.path(item):
-                if p not in paths:
-                    paths.append(p)
-
+            paths |= self.path(item)
         return paths
 
 
@@ -1751,13 +1752,18 @@ class MTSL(TSL):
         if not self.fsm.family:
             self.fsmize()
 
-        tier_smap = self.tier_state_maps()
-        if not any([len(tier_smap[x]) for x in tier_smap]):
+        if not self.tier_smap:
+            self.tier_smap = self.tier_state_maps()
+
+        if not any([len(self.tier_smap[x]) for x in self.tier_smap]):
             raise(ValueError("There are ngrams in the grammar that are"
                             " not leading anywhere. Clean the grammar "
                             " or run `grammar.clean_grammar()`."))
 
-        data = [self.generate_item(tier_smap) for i in range(n)]
+        if not self.main_smap:
+            self.main_smap = self.general_state_map(self.tier_smap)
+
+        data = [self.generate_item(self.tier_smap, self.main_smap) for i in range(n)]
 
         if not repeat:
             data = set(data)
@@ -1802,14 +1808,14 @@ class MTSL(TSL):
         return tiers
 
 
-    def generate_item(self, tier_smap):
+
+    def generate_item(self, tier_smap, main_smap):
         """
         Generates a well-formed string with respect to the given grammar.
         Returns:
             str: a well-formed string.
         """
         word = self.edges[0] * (self.k - 1)
-        main_smap = self.general_state_map(tier_smap)
         tier_images = self.tier_image(word)
 
         while word[-1] != self.edges[1]:
@@ -1825,7 +1831,11 @@ class MTSL(TSL):
                 tier_images = self.tier_image(word)
 
         
-        return word[(self.k - 1):-1]
+        newword = word[(self.k - 1):-1] 
+        if self.scan(newword):    
+            return newword
+        else:
+            return self.generate_item(tier_smap, main_smap)
 
 
     def tier_state_maps(self):
@@ -1893,6 +1903,17 @@ class MTSL(TSL):
                     inter = [i for i in main_smap[entry] if i in other[entry]]
                     main_smap[entry] = inter
 
+        free_ones = []
+        for i in self.alphabet:
+            for j in self.grammar:
+                if i in j:
+                    break
+            free_ones.append(i)
+
+        ext_alphabet = deepcopy(self.alphabet) + [self.edges[1]]
+        for x in free_ones:
+            main_smap[x] = ext_alphabet
+
         return main_smap
 
 
@@ -1914,7 +1935,7 @@ class MTSL(TSL):
             sl.fsmize()
             sl.clean_grammar()
             self.grammar[tier] = deepcopy(sl.grammar)
-            
+
 
 def ostia(S, Sigma, Gamma):
     """
@@ -2362,7 +2383,7 @@ def handle_infer_button(event):
         f = document.select('#membership-field')[0]
         string = f.value
         if syntax_mode:
-            string = ''.join(syntax_mode_table[w] if w in syntax_mode_table else next_substitute for w in string.split())
+            string = [syntax_mode_table[w] if w in syntax_mode_table else None for w in string.split()]
         r = document.select('#membership-result')[0]
         m = 'Yes' if all(c in model.alphabet for c in string) and model.scan(string) else 'No'
         f.class_name = m
