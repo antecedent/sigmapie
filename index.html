@@ -2395,7 +2395,7 @@ def handle_infer_button(event):
         tbody <= html.TR([html.TH('Tier'), html.TH('Constraint')])
         if 'MTSL' in model_class:
             for tier, constraints in model.grammar.items():
-                tbody <= html.TR([html.TD('{' + ', '.join(sorted(T[c].strip() for c in tier)) + '}' if tier != '3-SL' else tier), html.TD(', '.join('*' + ''.join(T[c] for c in constraint) for constraint in constraints))])
+                tbody <= html.TR([html.TD('{' + ', '.join(sorted(T[c].strip() for c in tier)) + '}' if tier != '3-SL' else tier), html.TD(', '.join('*' + ''.join(T[c] for c in constraint).strip() for constraint in constraints))])
         else:
             for constraint in model.grammar:
                 tbody <= html.TR([html.TD('{' + ', '.join(sorted(T[c].strip() for c in model.tier)) + '}'), html.TD('*' + ''.join(T[c] for c in constraint).strip())])
