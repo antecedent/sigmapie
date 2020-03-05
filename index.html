@@ -31,6 +31,10 @@
             border-collapse: collapse;
         }
 
+        td:first-child {
+            white-space: nowrap;
+        }
+
         table, table tr, table th, table td {
             border: 1px solid gray;
         }
@@ -90,6 +94,7 @@
     <button id="infer">Click to infer</button> a stringset from the 
     <select>
         <option value="2-MTSL" selected>2-MTSL</option>
+        <option value="2-MTSL &amp; 3-SL">2-MTSL &amp; 3-SL</option>
         <option value="2-TSL">2-TSL</option>
         <option value="2-SP">2-SP</option>
         <option value="2-SL">2-SL</option>
@@ -2313,6 +2318,34 @@ def _keep_alive(x, memo):
         # aha, this is the first one :-)
         memo[id(memo)]=[x]
 
+class MTSL_SL:
+    def __init__(self):
+        self.mtsl = MTSL(k=2, polar='n')
+        self.sl = SL(k=3, polar='n')
+        self.data = []
+        self.alphabet = []
+        self.grammar = {}
+
+    def extract_alphabet(self):
+        self.mtsl.data = self.data
+        self.sl.data = self.data
+        self.mtsl.extract_alphabet()
+        self.sl.extract_alphabet()
+        self.alphabet = self.mtsl.alphabet
+
+    def learn(self):
+        self.mtsl.learn()
+        self.sl.learn()
+        self.grammar = dict(self.mtsl.grammar)
+        self.grammar['3-SL'] = self.sl.grammar
+
+    def scan(self, word):
+        return self.sl.scan(word) and self.mtsl.scan(word)
+
+    def generate_sample(self):
+        return [word for word in self.sl.generate_sample() if self.mtsl.scan(word)]
+
+
 constructors = {
     '2-MTSL': lambda: MTSL(k=2, polar='n'),
     '2-TSL':  lambda: TSL(k=2, polar='n'),
@@ -2324,6 +2357,8 @@ constructors = {
     '4-TSL':  lambda: TSL(k=4, polar='n'),
     '4-SP':   lambda: SP(k=4, polar='n'),
     '5-SL':   lambda: SL(k=4, polar='n'),
+
+    '2-MTSL & 3-SL': lambda: MTSL_SL()
 }
 
 def handle_infer_button(event):
@@ -2360,7 +2395,7 @@ def handle_infer_button(event):
         tbody <= html.TR([html.TH('Tier'), html.TH('Constraint')])
         if 'MTSL' in model_class:
             for tier, constraints in model.grammar.items():
-                tbody <= html.TR([html.TD('{' + ', '.join(sorted(T[c].strip() for c in tier)) + '}'), html.TD(', '.join('*' + (T[a] + T[b]).strip() for a, b in constraints))])
+                tbody <= html.TR([html.TD('{' + ', '.join(sorted(T[c].strip() for c in tier)) + '}' if tier != '3-SL' else tier), html.TD(', '.join('*' + ''.join(T[c] for c in constraint) for constraint in constraints))])
         else:
             for constraint in model.grammar:
                 tbody <= html.TR([html.TD('{' + ', '.join(sorted(T[c].strip() for c in model.tier)) + '}'), html.TD('*' + ''.join(T[c] for c in constraint).strip())])
