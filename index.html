@@ -2413,7 +2413,7 @@ def handle_infer_button(event):
     example_box = html.DIV()
     out <= example_box
     def generate_examples(event):
-        example_box <= html.P(', '.join(''.join(T[c] for c in s).strip() for s in model.generate_sample()))
+        example_box <= html.P((',\n' if syntax_mode else ', ').join(''.join(T[c] for c in s).strip() for s in model.generate_sample()))
     def test_membership(event):
         f = document.select('#membership-field')[0]
         string = f.value
