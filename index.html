@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 
@@ -123,6 +124,66 @@
 
 <p>Using SigmaPie snapshot of 2 February 2020,<br>with minimal extra patching for a sub-asymptotic performance boost.</p>
 <p>Made available as a web application by Ignas Rudaitis.</p>
+
+<script type="text/javascript">
+    window.mtsl2ia = function(alphabet, data) 
+    {
+        let possible = new Set;
+        for (let a of [...alphabet, '>']) {
+            for (let b of [...alphabet, '<']) {
+                possible.add(a + b);
+            }
+        }
+        let attested = new Set;
+        for (let d of data) {
+            d = '>' + d + '<';
+            for (let k = 0; k < d.length - 1; k++) {
+                attested.add(d[k] + d[k + 1]);
+            }
+        }
+        let unattested = new Set([...possible].filter(ab => !attested.has(ab)));
+
+        let paths = {};
+
+        for (let d of data) {
+            d = '>' + d + '<';
+            for (let k1 = 0; k1 < d.length - 1; k1++) {
+                for (let k2 = k1 + 1; k2 < d.length; k2++) {
+                    if (!paths.hasOwnProperty(d[k1] + d[k2])) {
+                        paths[d[k1] + d[k2]] = new Set;
+                    }
+                    paths[d[k1] + d[k2]].add([...new Set(d.substring(k1 + 1, k2))].sort().join(''));
+                }
+            }
+        }
+
+        let grammar = [];
+
+        for (let bgr of unattested) {
+            if (!paths.hasOwnProperty(bgr)) {
+                paths[bgr] = new Set;
+            }
+            let tier = new Set(alphabet);
+            for (let s of alphabet) {
+                if (bgr.includes(s)) {
+                    continue;
+                }
+                let shouldDelete = true;
+                for (let path of [...paths[bgr]].filter(p => p.includes(s))) {
+                    if (!paths[bgr].has(path.replace(s, ''))) {
+                        shouldDelete = false;
+                        break;
+                    }
+                }
+                if (shouldDelete) {
+                    tier.delete(s);
+                }
+            }
+            grammar.push([[...tier], bgr]);
+        }
+        return grammar;
+    };
+</script>
 
 <script type="text/python">
 
@@ -1537,43 +1598,10 @@ class MTSL(TSL):
             raise ValueError("The alphabet is empty. Provide data or "
                 "run `grammar.extract_alphabet`.")
 
-        possible = set(self.generate_all_ngrams(self.alphabet, self.k))
-        attested = set()
-        for d in self.data:
-            bigrams = self.ngramize_item(self.annotate_string(d))
-            attested.update(set(bigrams))
-        unattested = list(possible.difference(attested))
-
-        paths = self.all_paths(self.data)
         grammar = []
+        for g in window.mtsl2ia(self.alphabet, self.data):
+            grammar.append(tuple([tuple(g[0]), tuple(g[1])]))
 
-        for bgr in unattested:
-            tier = self.alphabet[:]
-
-            for s in self.alphabet:
-                rmv = True
-
-                # condition 1
-                if s in bgr:
-                    rmv = False
-                    continue
-
-                # condition 2
-                relevant_paths = []
-                for p in paths:
-                    if (p[0] == bgr[0]) and (p[-1] == bgr[-1]) and (s in p[1]):
-                        relevant_paths.append(p)
-                for rp in relevant_paths:
-                    new = (rp[0], tuple(i for i in rp[1] if i != s), rp[2])
-                    if new not in paths:
-                        rmv = False
-                        break
-
-                # remove from the tier if passed both conditions
-                if rmv:
-                    tier.remove(s)
-
-            grammar.append((tier, bgr))
         gathered = self.gather_grammars(grammar)
 
         self.grammar = gathered
@@ -1597,6 +1625,9 @@ class MTSL(TSL):
         tier_evals = []
 
         for tier in self.grammar:
+            if tier == '3-SL':
+                continue
+
             t = tier
             g = self.grammar[tier]
 
@@ -1650,9 +1681,7 @@ class MTSL(TSL):
 
         for i in range(len(string) - 1):
             for j in range(i + 1, len(string)):
-                path = (string[i], tuple(set(k for k in string[(i + 1):j])), string[j])
-                if path not in paths:
-                    paths.add(path)
+                paths.add((string[i], ''.join(sorted(set(string[(i + 1):j]))), string[j]))
 
         return paths
 
@@ -1715,6 +1744,8 @@ class MTSL(TSL):
         restr_to_fsm = []
 
         for alpha, ngrams in self.grammar.items():
+            if alpha == '3-SL':
+                continue
             polarity = self.check_polarity()
             tsl = TSL(self.alphabet, self.grammar, self.k, self.data,
                 self.edges, polar=polarity)
@@ -1805,6 +1836,8 @@ class MTSL(TSL):
         """
         tiers = {}
         for i in self.grammar:
+            if i == '3-SL':
+                continue
             curr_tier = ""
             for s in string:
                 if s in self.edges or s in i:
