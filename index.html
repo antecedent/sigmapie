@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 
@@ -109,8 +110,9 @@
 
     <p>
         You might also want to preprocess the input: click a button
-        <button id="lowercase">to lowercase</button>, or
-        <button id="remove-punctuation">to remove punctuation</button>.
+        <button id="lowercase">to lowercase</button>,
+        <button id="remove-punctuation">to remove punctuation</button>, or
+        <button id="remove-numbers">to remove numbers</button>.
     </p>
 
     <p>
@@ -125,6 +127,36 @@
 <p>Made available as a web application by Ignas Rudaitis.</p>
 
 <script type="text/javascript">
+    window.slia = function(alphabet, data, k, polarity)
+    {
+        let generate = function*(n) 
+        {
+            if (n === 0) {
+                yield '';
+            } else {
+                for (let letter of [...alphabet, '>', '<']) {
+                    for (let suffix of generate(n - 1)) {
+                        yield letter + suffix;
+                    }
+                }
+            }
+        };
+
+        let possible = new Set;
+        for (let word of data) {
+            word = '>'.repeat(k - 1) + word + '<'.repeat(k - 1);
+            for (let pos = 0; pos < word.length - k + 1; pos++) {
+                possible.add(word.substr(pos, k));
+            }
+        }
+
+        if (polarity === 'p') {
+            return [...possible];
+        } else {
+            return [...generate(k)].filter(g => !possible.has(g) && !/>|</.test(g.replace(/^>+|<+$/g, '')) && g !== '>'.repeat(k) && g !== '<'.repeat(k));
+        }
+    };
+
     window.mtsl2ia = function(alphabet, data) 
     {
         let possible = new Set;
@@ -181,6 +213,53 @@
             grammar.push([[...tier], bgr]);
         }
         return grammar;
+    };
+
+    window.mtsl2scan = function(string, grammar)
+    {
+        for (let key of Object.keys(grammar)) {
+            let tier = key.split(',').join('');
+            let re = new RegExp(`[^${tier}><]`, 'g');
+            let projection = string.replace(re, '');
+            for (let [a, b] of grammar[key]) {
+                if (projection.includes(a + b)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    };
+
+    window.mtsl2batch = [''];
+
+    window.mtsl2generate = function(alphabet, grammar) 
+    {
+        let result = [];
+        let batch = window.mtsl2batch;
+        let then = Date.now();
+        while (Date.now() - then < 1000 && result.length < 100) {
+            let nextBatch = [];
+            let k = 0;
+            for (let item of batch) {
+                for (let a of alphabet) {
+                    let newItem = item + a;
+                    if (mtsl2scan('>' + newItem, grammar)) {
+                        nextBatch.push(newItem);
+                        if (mtsl2scan('>' + newItem + '<', grammar)) {
+                            result.push(newItem);
+                        }
+                    }
+                    if (Date.now() - then >= 1000 || result.length >= 100) {
+                        window.mtsl2batch = batch.slice(k).concat(nextBatch);
+                        return result;
+                    }
+                }
+                k++;
+            }
+            batch = nextBatch;
+        }
+        window.mtsl2batch = batch;
+        return result;
     };
 </script>
 
@@ -1066,10 +1145,7 @@ class SL(L):
 
 
     def learn(self):
-        """ Extracts SL grammar from the given data. """
-        self.grammar = self.ngramize_data()
-        if self.check_polarity() == "n":
-            self.grammar = self.opposite_polarity(self.alphabet)
+        self.grammar = [tuple(c) for c in window.slia(self.alphabet, self.data, self.k, self.check_polarity())]
 
                 
     def annotate_string(self, string):
@@ -1611,6 +1687,7 @@ class MTSL(TSL):
 
         self.tier_smap = None
         self.main_smap = None
+        window.mtsl2batch = ['']
 
 
     def scan(self, string):
@@ -1621,27 +1698,7 @@ class MTSL(TSL):
         Returns:
             bool: well-formedness of the string.
         """
-        tier_evals = []
-
-        for tier in self.grammar:
-            if tier == '3-SL':
-                continue
-
-            t = tier
-            g = self.grammar[tier]
-
-            delete_non_tier = "".join([i for i in string if i in t])
-            tier_image = self.annotate_string(delete_non_tier)
-            ngrams = self.ngramize_item((tier_image))
-
-            this_tier = [(ngr in g) for ngr in ngrams]
-
-            if self.check_polarity() == "p":
-                tier_evals.append(all(this_tier))
-            else:
-                tier_evals.append(not any(this_tier))
-
-        return all(tier_evals)
+        return window.mtsl2scan('>' + string + '<', {k: v for (k, v) in self.grammar.items() if k != '3-SL'})
 
 
     def gather_grammars(self, grammar):
@@ -1768,58 +1825,7 @@ class MTSL(TSL):
 
 
     def generate_sample(self, n=10, repeat=True, safe=True):
-        """
-        Generates a data sample of the required size, with or without
-        repetitions depending on `repeat` value.
-        Arguments:
-            n (int): the number of examples to be generated;
-            repeat (bool): allows (rep=True) or prohibits (rep=False)
-               repetitions within the list of generated items;
-            safe (bool): automatically breaks out of infinite loops,
-                for example, when the grammar cannot generate the
-                required number of data items, and the repetitions
-                are set to False.
-        Returns:
-            list: generated data sample.
-        """
-        if not self.alphabet:
-            raise ValueError("Alphabet cannot be empty.")
-        if not self.fsm.family:
-            self.fsmize()
-
-        if not self.tier_smap:
-            self.tier_smap = self.tier_state_maps()
-
-        if not any([len(self.tier_smap[x]) for x in self.tier_smap]):
-            raise(ValueError("There are ngrams in the grammar that are"
-                            " not leading anywhere. Clean the grammar "
-                            " or run `grammar.clean_grammar()`."))
-
-        if not self.main_smap:
-            self.main_smap = self.general_state_map(self.tier_smap)
-
-        data = [self.generate_item(self.tier_smap, self.main_smap) for i in range(n)]
-
-        if not repeat:
-            data = set(data)
-            useless_loops = 0
-            prev_len = len(data)
-
-            while len(data) < n:
-                data.add(self.generate_item(tier_smap))
-
-                if prev_len == len(data):
-                    useless_loops += 1
-                else:
-                    useless_loops = 0
-                
-                if safe and useless_loops > 500:
-                    print("The grammar cannot produce the requested "
-                          "number of strings. Check the grammar, "
-                          "reduce the number, or allow repetitions.")
-                    break
-
-        return list(data)
+        return window.mtsl2generate(self.alphabet, {k: v for (k, v) in self.grammar.items() if k != '3-SL'})
 
 
     def tier_image(self, string):
@@ -2484,9 +2490,15 @@ def handle_punctuation_removal_button(event):
     words_box = document.select('#input textarea')[0]
     words_box.value = ''.join((c if not is_punctuation(c) else ' ') for c in words_box.value)
 
+def handle_number_removal_button(event):
+    words_box = document.select('#input textarea')[0]
+    words_box.value = ''.join((c if not c.isdigit() else ' ') for c in words_box.value)
+
 document.select('#infer')[0].bind('click', handle_infer_button)
 document.select('#lowercase')[0].bind('click', handle_lowercase_button)
 document.select('#remove-punctuation')[0].bind('click', handle_punctuation_removal_button)
+document.select('#remove-numbers')[0].bind('click', handle_number_removal_button)
+
     
 </script>
 
